@@ -30,7 +30,7 @@ export default function UserList() {
       try {
         setLoading(true); // Bắt đầu loading
         const usersData = await axios.get(
-          "http://localhost:3000/api/v1/students",
+          "https://backend-quizz-deploy.onrender.com/api/v1/students",
           {
             headers: {
               email: "admin@gmail.com",

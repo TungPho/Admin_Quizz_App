@@ -24,7 +24,7 @@ export default function AdminLogin() {
       setError("");
 
       const response = await axios.post(
-        "http://localhost:3000/api/v1/admin/login",
+        "https://backend-quizz-deploy.onrender.com/api/v1/admin/login",
         {
           email,
           password,

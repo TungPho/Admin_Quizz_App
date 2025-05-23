@@ -30,7 +30,7 @@ export default function TeacherList() {
       try {
         setLoading(true); // Bắt đầu loading
         const teachersData = await axios.get(
-          "http://localhost:3000/api/v1/teachers",
+          "https://backend-quizz-deploy.onrender.com/api/v1/teachers",
           {
             headers: {
               email: "admin@gmail.com",

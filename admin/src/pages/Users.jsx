@@ -29,7 +29,7 @@ export default function UserList() {
       try {
         setLoading(true); // Bắt đầu loading
         const usersData = await axios.get(
-          "http://localhost:3000/api/v1/users",
+          "https://backend-quizz-deploy.onrender.com/api/v1/users",
           {
             headers: {
               email: "admin@gmail.com",
@@ -88,7 +88,7 @@ export default function UserList() {
     if (studentToDelete) {
       try {
         const deleteReq = await axios.delete(
-          `http://localhost:3000/api/v1/users/${studentToDelete}`,
+          `https://backend-quizz-deploy.onrender.com/api/v1/users/${studentToDelete}`,
           {
             headers: {
               email: "admin@gmail.com",

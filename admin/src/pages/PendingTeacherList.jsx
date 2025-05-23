@@ -14,7 +14,7 @@ const PendingTeacherList = () => {
       try {
         setLoading(true);
         const response = await axios.get(
-          "http://localhost:3000/api/v1/teachers_request",
+          "https://backend-quizz-deploy.onrender.com/api/v1/teachers_request",
           {
             headers: {
               email: "admin@gmail.com",
@@ -35,7 +35,7 @@ const PendingTeacherList = () => {
   const handleApprove = async (id) => {
     try {
       const req = await axios.post(
-        `http://localhost:3000/api/v1/teachers_request/${id}`,
+        `https://backend-quizz-deploy.onrender.com/api/v1/teachers_request/${id}`,
         {},
         {
           headers: {
@@ -56,7 +56,7 @@ const PendingTeacherList = () => {
   const handleReject = async (id) => {
     try {
       await axios.post(
-        `http://localhost:3000/api/v1/reject_teacher/${id}`,
+        `https://backend-quizz-deploy.onrender.com/api/v1/reject_teacher/${id}`,
         {},
         {
           headers: {
