@@ -39,7 +39,7 @@ export default function AdminLogin() {
       localStorage.setItem("adminEmail", adminEmail);
 
       // Redirect to admin dashboard
-      navigate("/users");
+      navigate("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       setError(
@@ -79,7 +79,6 @@ export default function AdminLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="admin@example.com"
               required
             />
           </div>

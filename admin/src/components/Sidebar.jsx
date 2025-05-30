@@ -121,6 +121,22 @@ const SideBar = () => {
             {/*để kiểm tra giao diện mobile hay không ? có thì ẩn chữ, còn không thì hiện*/}
 
             <NavLink
+              to={"/dashboard"}
+              className={({ isActive }) =>
+                `flex items-center py-3 px-4 my-1.5 rounded-lg transition-colors duration-200 ${
+                  isActive
+                    ? "text-[#31cd63] bg-green-50 font-medium shadow-sm"
+                    : "hover:bg-gray-100"
+                } ${collapsed && !isMobile ? "justify-center" : ""}`
+              }
+            >
+              <FaUsers
+                className={`${collapsed && !isMobile ? "" : "mr-3"}`}
+                size={18}
+              />
+              {collapsed && !isMobile ? "" : "Dashboard"}
+            </NavLink>
+            <NavLink
               to={"/users"}
               className={({ isActive }) =>
                 `flex items-center py-3 px-4 my-1.5 rounded-lg transition-colors duration-200 ${
