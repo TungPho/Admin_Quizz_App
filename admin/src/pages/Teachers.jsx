@@ -112,7 +112,7 @@ export default function TeacherList() {
           <div className="bg-white shadow-sm border-b p-4">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-800">
-                Quản lý giáo viên
+                Teachers Management
               </h1>
               <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
                 <Plus size={18} className="mr-1" />

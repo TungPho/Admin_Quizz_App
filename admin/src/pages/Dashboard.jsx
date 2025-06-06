@@ -23,58 +23,183 @@ import {
 } from "recharts";
 import { AdminContext } from "../context/AdminContext";
 import SideBar from "../components/Sidebar";
+import axios from "axios";
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState("7days");
   const { collapsed } = useContext(AdminContext);
+  const [submissions, setSubmissions] = useState([]);
+  const [tests, setTests] = useState([]);
+
+  const calAverageScore = (submissions) => {
+    // Kiểm tra nếu mảng rỗng hoặc undefined
+    if (!submissions || submissions.length === 0) {
+      return 0;
+    }
+
+    let totalScore = 0;
+    for (let submit of submissions) {
+      totalScore += submit.score;
+    }
+    console.log(totalScore);
+    return (totalScore / submissions.length).toFixed(2); // Làm tròn 2 chữ số thập phân
+  };
+
+  const getPointsPercentage = (minScore, maxScore, submissionsData) => {
+    // Sử dụng parameter submissionsData thay vì state submissions
+    if (!submissionsData || submissionsData.length === 0) {
+      return "0.00";
+    }
+
+    console.log(submissionsData);
+    const totalSubmissions = submissionsData.length;
+
+    const submissionsInRange = submissionsData.filter(
+      (submit) => submit.score >= minScore && submit.score <= maxScore
+    );
+
+    const percentage = (submissionsInRange.length / totalSubmissions) * 100;
+    console.log(percentage);
+    return percentage.toFixed(2);
+  };
+
+  const getAverageTimeOfAllTests = (testsData) => {
+    // Kiểm tra nếu mảng rỗng hoặc undefined
+    if (!testsData || testsData.length === 0) {
+      return "0 phút";
+    }
+
+    let totalTime = 0;
+    for (let test of testsData) {
+      // Sử dụng timeLimit thay vì duration
+      totalTime += test.timeLimit || 0;
+    }
+
+    const averageTime = totalTime / testsData.length;
+
+    // Chuyển đổi sang định dạng phù hợp
+    if (averageTime >= 60) {
+      const hours = Math.floor(averageTime / 60);
+      const minutes = Math.round(averageTime % 60);
+      return hours > 0 ? `${hours}h ${minutes}m` : `${minutes} phút`;
+    } else {
+      return `${Math.round(averageTime)} phút`;
+    }
+  };
 
   // Mock data
   useEffect(() => {
     const fetchDashboardData = async () => {
-      setTimeout(() => {
+      try {
+        const studentsData = await axios.get(
+          "https://backend-quizz-deploy.onrender.com/api/v1/students",
+          {
+            headers: {
+              email: "admin@gmail.com",
+            },
+          }
+        );
+        const teachersData = await axios.get(
+          "https://backend-quizz-deploy.onrender.com/api/v1/teachers",
+          {
+            headers: {
+              email: "admin@gmail.com",
+            },
+          }
+        );
+
+        const totalExamData = await axios.get(
+          " https://backend-quizz-deploy.onrender.com/api/v1/tests",
+          {
+            headers: {
+              email: "admin@gmail.com",
+            },
+          }
+        );
+        const totalSubmissionData = await axios.get(
+          " https://backend-quizz-deploy.onrender.com/api/v1/submissions",
+          {
+            headers: {
+              email: "admin@gmail.com",
+            },
+          }
+        );
+
+        // Lấy dữ liệu submissions từ response
+        const submissionsData = totalSubmissionData.data.metadata || [];
+        const testsData = totalExamData.data.metadata || [];
+
+        // Set state
+        setSubmissions(submissionsData);
+        setTests(testsData);
+
+        console.log(totalSubmissionData);
+
+        // Tính điểm trung bình với dữ liệu vừa lấy được
+        const averageScore = calAverageScore(submissionsData);
+        // Tính thời gian trung bình các bài test
+        const averageTestTime = getAverageTimeOfAllTests(testsData);
+
+        setTimeout(() => {
+          setDashboardData({
+            overview: {
+              totalTests: testsData.length,
+              totalStudents: studentsData.data.metadata?.length || 0,
+              totalTeachers: teachersData.data.metadata?.length || 0,
+              avgScore: averageScore,
+              avgTestTime: averageTestTime,
+            },
+            subjectDistribution: [
+              { name: "Toán học", value: 45, color: "#3B82F6" },
+              { name: "Hóa học", value: 32, color: "#10B981" },
+              { name: "Vật lý", value: 28, color: "#8B5CF6" },
+              { name: "Sinh học", value: 25, color: "#F59E0B" },
+              { name: "Văn học", value: 18, color: "#EF4444" },
+              { name: "Tiếng Anh", value: 8, color: "#6B7280" },
+            ],
+            scoreDistribution: [
+              {
+                range: "0-2",
+                percent: getPointsPercentage(0, 2, submissionsData),
+              },
+              {
+                range: "2-4",
+                percent: getPointsPercentage(2, 4, submissionsData),
+              },
+              {
+                range: "4-6",
+                percent: getPointsPercentage(4, 6, submissionsData),
+              },
+              {
+                range: "6-8",
+                percent: getPointsPercentage(6, 8, submissionsData),
+              },
+              {
+                range: "8-10",
+                percent: getPointsPercentage(8, 10, submissionsData),
+              },
+            ],
+          });
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        setLoading(false);
+        // Set default data in case of error
         setDashboardData({
           overview: {
-            totalTests: 3,
-            totalStudents: 10,
-            totalTeachers: 1,
-            avgScore: 6.3,
+            totalTests: 0,
+            totalStudents: 0,
+            totalTeachers: 0,
+            avgScore: 0,
+            avgTestTime: "0 phút",
           },
-          subjectDistribution: [
-            { name: "Toán học", value: 45, color: "#3B82F6" },
-            { name: "Hóa học", value: 32, color: "#10B981" },
-            { name: "Vật lý", value: 28, color: "#8B5CF6" },
-            { name: "Sinh học", value: 25, color: "#F59E0B" },
-            { name: "Văn học", value: 18, color: "#EF4444" },
-            { name: "Tiếng Anh", value: 8, color: "#6B7280" },
-          ],
-          scoreDistribution: [
-            { range: "0-2", percent: 5 },
-            { range: "2-4", percent: 15 },
-            { range: "4-6", percent: 25 },
-            { range: "6-8", percent: 35 },
-            { range: "8-10", percent: 20 },
-          ],
-          dailyActivity: [
-            { day: "T2", tests: 45, students: 234 },
-            { day: "T3", tests: 52, students: 267 },
-            { day: "T4", tests: 48, students: 245 },
-            { day: "T5", tests: 61, students: 289 },
-            { day: "T6", tests: 55, students: 278 },
-            { day: "T7", tests: 23, students: 156 },
-            { day: "CN", tests: 12, students: 89 },
-          ],
-          monthlyPerformance: [
-            { month: "T1", avgScore: 75.2, completionRate: 82 },
-            { month: "T2", avgScore: 76.8, completionRate: 85 },
-            { month: "T3", avgScore: 78.1, completionRate: 87 },
-            { month: "T4", avgScore: 77.5, completionRate: 86 },
-            { month: "T5", avgScore: 78.3, completionRate: 88 },
-          ],
+          subjectDistribution: [],
+          scoreDistribution: [],
         });
-        setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchDashboardData();
@@ -138,7 +263,7 @@ const Dashboard = () => {
                     Tổng bài thi
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {dashboardData.overview.totalTests}
+                    {dashboardData?.overview?.totalTests || 0}
                   </p>
                 </div>
               </div>
@@ -154,7 +279,7 @@ const Dashboard = () => {
                     Tổng học sinh
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {dashboardData.overview.totalStudents}
+                    {dashboardData?.overview?.totalStudents || 0}
                   </p>
                 </div>
               </div>
@@ -170,7 +295,7 @@ const Dashboard = () => {
                     Tổng giáo viên
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {dashboardData.overview.totalTeachers}
+                    {dashboardData?.overview?.totalTeachers || 0}
                   </p>
                 </div>
               </div>
@@ -184,7 +309,7 @@ const Dashboard = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500">Điểm TB</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {dashboardData.overview.avgScore}
+                    {dashboardData?.overview?.avgScore || 0}
                   </p>
                 </div>
               </div>
@@ -201,7 +326,7 @@ const Dashboard = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={dashboardData.subjectDistribution}
+                    data={dashboardData?.subjectDistribution || []}
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
@@ -211,9 +336,11 @@ const Dashboard = () => {
                       `${name}: ${(percent * 100).toFixed(0)}%`
                     }
                   >
-                    {dashboardData.subjectDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                    {(dashboardData?.subjectDistribution || []).map(
+                      (entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      )
+                    )}
                   </Pie>
                   <Tooltip />
                 </PieChart>
@@ -226,7 +353,7 @@ const Dashboard = () => {
                 Phân bố điểm số
               </h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={dashboardData.scoreDistribution}>
+                <BarChart data={dashboardData?.scoreDistribution || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="range" />
                   <YAxis />
@@ -239,83 +366,16 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Daily Activity */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Hoạt động hàng ngày
-              </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dashboardData.dailyActivity}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="tests"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    name="Số bài thi"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="students"
-                    stroke="#10B981"
-                    strokeWidth={2}
-                    name="Lượt thi"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Monthly Performance */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Hiệu suất theo tháng
-              </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dashboardData.monthlyPerformance}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis yAxisId="left" domain={[70, 85]} />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    domain={[75, 95]}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="avgScore"
-                    stroke="#8B5CF6"
-                    strokeWidth={2}
-                    name="Điểm trung bình"
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="completionRate"
-                    stroke="#F59E0B"
-                    strokeWidth={2}
-                    name="Tỷ lệ hoàn thành (%)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
           {/* Additional Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  3,456
+                  {submissions.length}
                 </div>
-                <div className="text-sm text-gray-600">Tổng lượt thi</div>
+                <div className="text-sm text-gray-600">
+                  Tổng lượt nộp bài thi
+                </div>
               </div>
             </div>
 
@@ -333,7 +393,7 @@ const Dashboard = () => {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                  24h
+                  {dashboardData?.overview?.avgTestTime || "0 phút"}
                 </div>
                 <div className="text-sm text-gray-600">
                   Thời gian trung bình/bài thi

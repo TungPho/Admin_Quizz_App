@@ -3,23 +3,26 @@ import {
   Search,
   Plus,
   Edit,
-  Trash2,
   MoreHorizontal,
   Filter,
   Download,
+  UserCheck,
+  UserX,
 } from "lucide-react";
 import { AdminContext } from "../context/AdminContext";
 import axios from "axios";
 import SideBar from "../components/Sidebar";
+
 export default function UserList() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true); // Thêm state loading
-  const [error, setError] = useState(null); // Thêm state error
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("");
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [isActivateModalOpen, setIsActivateModalOpen] = useState(false);
+  const [userToToggle, setUserToToggle] = useState(null);
+  const [toggleAction, setToggleAction] = useState(""); // "activate" or "deactivate"
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage] = useState(4);
   const { collapsed } = useContext(AdminContext);
@@ -27,7 +30,7 @@ export default function UserList() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        setLoading(true); // Bắt đầu loading
+        setLoading(true);
         const usersData = await axios.get(
           "https://backend-quizz-deploy.onrender.com/api/v1/users",
           {
@@ -42,7 +45,7 @@ export default function UserList() {
         console.error("Error fetching users:", err);
         setError("Không thể tải dữ liệu sinh viên");
       } finally {
-        setLoading(false); // Kết thúc loading bất kể thành công hay thất bại
+        setLoading(false);
       }
     };
     fetchUsers();
@@ -83,26 +86,64 @@ export default function UserList() {
   );
   const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
 
-  // Handle student deletion
-  const handleDeleteStudent = async () => {
-    if (studentToDelete) {
+  // Handle user activation/deactivation
+  const handleToggleUserStatus = async () => {
+    if (userToToggle) {
       try {
-        const deleteReq = await axios.delete(
-          `https://backend-quizz-deploy.onrender.com/api/v1/users/${studentToDelete}`,
-          {
-            headers: {
-              email: "admin@gmail.com",
-            },
-          }
+        let response;
+        console.log(userToToggle);
+        if (toggleAction === "activate") {
+          // Gọi API activate user
+          response = await axios.patch(
+            `https://backend-quizz-deploy.onrender.com/api/v1/activate-users/${userToToggle.userId}`,
+            {
+              headers: {
+                email: "admin@gmail.com",
+              },
+            }
+          );
+        } else {
+          // Gọi API deactivate user
+          response = await axios.patch(
+            `https://backend-quizz-deploy.onrender.com/api/v1/deactivate-users/${userToToggle.userId}`,
+            {
+              headers: {
+                email: "admin@gmail.com",
+              },
+            }
+          );
+        }
+
+        // Cập nhật state local
+        setUsers(
+          users.map((user) =>
+            user._id === userToToggle.userId
+              ? { ...user, isActive: toggleAction === "activate" }
+              : user
+          )
         );
-        console.log(deleteReq);
+
+        console.log("User status updated:", response.data);
       } catch (error) {
-        console.log(error);
+        console.error("Error updating user status:", error);
+        alert("Có lỗi xảy ra khi cập nhật trạng thái user");
       }
-      setUsers(users.filter((student) => student._id !== studentToDelete));
-      setIsDeleteModalOpen(false);
-      setStudentToDelete(null);
+
+      setIsActivateModalOpen(false);
+      setUserToToggle(null);
+      setToggleAction("");
     }
+  };
+
+  // Open toggle modal
+  const openToggleModal = (user, action) => {
+    setUserToToggle({
+      userId: user._id,
+      userName: user.user_attributes?.name || user.email,
+      currentStatus: user.isActive,
+    });
+    setToggleAction(action);
+    setIsActivateModalOpen(true);
   };
 
   // Format date to display
@@ -124,12 +165,8 @@ export default function UserList() {
           <div className="bg-white shadow-sm border-b p-4">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-800">
-                Quản lý sinh viên
+                User Management
               </h1>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
-                <Plus size={18} className="mr-1" />
-                Thêm sinh viên
-              </button>
             </div>
           </div>
 
@@ -204,6 +241,9 @@ export default function UserList() {
                       University
                     </th>
                     <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
                       Created Date
                     </th>
                     <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
@@ -214,7 +254,7 @@ export default function UserList() {
                 <tbody className="divide-y divide-gray-200">
                   {currentStudents.length > 0 ? (
                     currentStudents.map((student, index) => {
-                      if (student.role === "admin") return;
+                      if (student.role === "admin") return null;
                       return (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="py-4 px-4 text-gray-800">
@@ -232,6 +272,19 @@ export default function UserList() {
                           <td className="py-4 px-4 text-gray-800">
                             {student.user_attributes?.school_name || "-"}
                           </td>
+                          <td className="py-4 px-4">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                student.isActive !== false
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {student.isActive !== false
+                                ? "Active"
+                                : "Inactive"}
+                            </span>
+                          </td>
                           <td className="py-4 px-4 text-gray-800">
                             {formatDate(student.createdAt)}
                           </td>
@@ -240,15 +293,29 @@ export default function UserList() {
                               <button className="text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-50">
                                 <Edit size={18} />
                               </button>
-                              <button
-                                className="text-red-600 hover:text-red-800 p-1 rounded-md hover:bg-red-50"
-                                onClick={() => {
-                                  setStudentToDelete(student._id);
-                                  setIsDeleteModalOpen(true);
-                                }}
-                              >
-                                <Trash2 size={18} />
-                              </button>
+
+                              {student.isActive !== false ? (
+                                <button
+                                  className="text-red-600 hover:text-red-800 p-1 rounded-md hover:bg-red-50"
+                                  onClick={() =>
+                                    openToggleModal(student, "deactivate")
+                                  }
+                                  title="Deactivate user"
+                                >
+                                  <UserX size={18} />
+                                </button>
+                              ) : (
+                                <button
+                                  className="text-green-600 hover:text-green-800 p-1 rounded-md hover:bg-green-50"
+                                  onClick={() =>
+                                    openToggleModal(student, "activate")
+                                  }
+                                  title="Activate user"
+                                >
+                                  <UserCheck size={18} />
+                                </button>
+                              )}
+
                               <button className="text-gray-600 hover:text-gray-800 p-1 rounded-md hover:bg-gray-50">
                                 <MoreHorizontal size={18} />
                               </button>
@@ -260,7 +327,7 @@ export default function UserList() {
                   ) : (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={8}
                         className="py-8 text-center text-gray-500"
                       >
                         Không tìm thấy sinh viên nào
@@ -321,27 +388,36 @@ export default function UserList() {
           )}
         </div>
 
-        {/* Delete Confirmation Modal */}
-        {isDeleteModalOpen && (
+        {/* Activate/Deactivate Confirmation Modal */}
+        {isActivateModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-96">
-              <h3 className="text-lg font-semibold mb-4">Xác nhận xóa</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                {toggleAction === "activate"
+                  ? "Kích hoạt tài khoản"
+                  : "Vô hiệu hóa tài khoản"}
+              </h3>
               <p className="mb-6">
-                Bạn có chắc chắn muốn xóa sinh viên này không? Hành động này
-                không thể hoàn tác.
+                Bạn có chắc chắn muốn{" "}
+                {toggleAction === "activate" ? "kích hoạt" : "vô hiệu hóa"} tài
+                khoản của <strong>{userToToggle?.userName}</strong> không?
               </p>
               <div className="flex justify-end gap-2">
                 <button
                   className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-                  onClick={() => setIsDeleteModalOpen(false)}
+                  onClick={() => setIsActivateModalOpen(false)}
                 >
                   Hủy
                 </button>
                 <button
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                  onClick={handleDeleteStudent}
+                  className={`px-4 py-2 rounded-md text-white ${
+                    toggleAction === "activate"
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                  onClick={handleToggleUserStatus}
                 >
-                  Xóa
+                  {toggleAction === "activate" ? "Kích hoạt" : "Vô hiệu hóa"}
                 </button>
               </div>
             </div>

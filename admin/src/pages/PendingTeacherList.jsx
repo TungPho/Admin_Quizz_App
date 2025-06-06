@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from "react";
 import { AdminContext } from "../context/AdminContext";
 import SideBar from "../components/Sidebar";
 import axios from "axios";
-
 const PendingTeacherList = () => {
   const { collapsed } = useContext(AdminContext);
   const [teacherRequests, setTeacherRequests] = useState([]);
