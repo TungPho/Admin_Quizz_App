@@ -96,6 +96,7 @@ export default function UserList() {
           // Gọi API activate user
           response = await axios.patch(
             `https://backend-quizz-deploy.onrender.com/api/v1/activate-users/${userToToggle.userId}`,
+            {}, // hoặc null nếu không cần body
             {
               headers: {
                 email: "admin@gmail.com",
@@ -104,9 +105,9 @@ export default function UserList() {
           );
         } else {
           // Gọi API deactivate user
-
           response = await axios.patch(
             `https://backend-quizz-deploy.onrender.com/api/v1/deactivate-users/${userToToggle.userId}`,
+            {},
             {
               headers: {
                 email: "admin@gmail.com",
