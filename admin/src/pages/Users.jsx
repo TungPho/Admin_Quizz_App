@@ -104,6 +104,7 @@ export default function UserList() {
           );
         } else {
           // Gọi API deactivate user
+
           response = await axios.patch(
             `https://backend-quizz-deploy.onrender.com/api/v1/deactivate-users/${userToToggle.userId}`,
             {
