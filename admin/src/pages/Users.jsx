@@ -27,27 +27,28 @@ export default function UserList() {
   const [studentsPerPage] = useState(4);
   const { collapsed } = useContext(AdminContext);
 
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const usersData = await axios.get(
+        "https://backend-quizz-deploy.onrender.com/api/v1/users",
+        {
+          headers: {
+            email: "admin@gmail.com",
+          },
+        }
+      );
+      console.log(usersData.data);
+      setUsers(usersData.data.metadata);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+      setError("Unable to load user data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const usersData = await axios.get(
-          "https://backend-quizz-deploy.onrender.com/api/v1/users",
-          {
-            headers: {
-              email: "admin@gmail.com",
-            },
-          }
-        );
-        console.log(usersData.data);
-        setUsers(usersData.data.metadata);
-      } catch (err) {
-        console.error("Error fetching users:", err);
-        setError("Không thể tải dữ liệu sinh viên");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
 
@@ -93,10 +94,10 @@ export default function UserList() {
         let response;
         console.log(userToToggle);
         if (toggleAction === "activate") {
-          // Gọi API activate user
+          // Call activate user API
           response = await axios.patch(
             `https://backend-quizz-deploy.onrender.com/api/v1/activate-users/${userToToggle.userId}`,
-            {}, // hoặc null nếu không cần body
+            {}, // or null if no body needed
             {
               headers: {
                 email: "admin@gmail.com",
@@ -104,7 +105,7 @@ export default function UserList() {
             }
           );
         } else {
-          // Gọi API deactivate user
+          // Call deactivate user API
           response = await axios.patch(
             `https://backend-quizz-deploy.onrender.com/api/v1/deactivate-users/${userToToggle.userId}`,
             {},
@@ -116,19 +117,13 @@ export default function UserList() {
           );
         }
 
-        // Cập nhật state local
-        setUsers(
-          users.map((user) =>
-            user._id === userToToggle.userId
-              ? { ...user, isActive: toggleAction === "activate" }
-              : user
-          )
-        );
-
         console.log("User status updated:", response.data);
+
+        // Refresh the user list after successful update
+        await fetchUsers();
       } catch (error) {
         console.error("Error updating user status:", error);
-        alert("Có lỗi xảy ra khi cập nhật trạng thái user");
+        alert("An error occurred while updating user status");
       }
 
       setIsActivateModalOpen(false);
@@ -152,7 +147,7 @@ export default function UserList() {
   const formatDate = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN");
+    return date.toLocaleDateString("en-US");
   };
 
   return (
@@ -180,7 +175,7 @@ export default function UserList() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Tìm kiếm theo tên, email, mã sinh viên..."
+                  placeholder="Search by name, email, student ID..."
                   className="pl-10 p-2 border border-gray-300 rounded-md w-full"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -197,7 +192,7 @@ export default function UserList() {
                     value={selectedSchool}
                     onChange={(e) => setSelectedSchool(e.target.value)}
                   >
-                    <option value="">Tất cả trường</option>
+                    <option value="">All Schools</option>
                     {uniqueSchools.map((school, index) => (
                       <option key={index} value={school}>
                         {school}
@@ -234,7 +229,7 @@ export default function UserList() {
                       Email
                     </th>
                     <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      id
+                      ID
                     </th>
                     <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
                       Role
@@ -277,12 +272,12 @@ export default function UserList() {
                           <td className="py-4 px-4">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                student.isActive !== false
+                                student.is_active !== false
                                   ? "bg-green-100 text-green-800"
                                   : "bg-red-100 text-red-800"
                               }`}
                             >
-                              {student.isActive !== false
+                              {student.is_active !== false
                                 ? "Active"
                                 : "Inactive"}
                             </span>
@@ -296,7 +291,7 @@ export default function UserList() {
                                 <Edit size={18} />
                               </button>
 
-                              {student.isActive !== false ? (
+                              {student.is_active !== false ? (
                                 <button
                                   className="text-red-600 hover:text-red-800 p-1 rounded-md hover:bg-red-50"
                                   onClick={() =>
@@ -332,7 +327,7 @@ export default function UserList() {
                         colSpan={8}
                         className="py-8 text-center text-gray-500"
                       >
-                        Không tìm thấy sinh viên nào
+                        No users found
                       </td>
                     </tr>
                   )}
@@ -345,9 +340,9 @@ export default function UserList() {
           {!loading && !error && filteredStudents.length > 0 && (
             <div className="flex justify-between items-center p-4 bg-white border-t">
               <div className="text-sm text-gray-600">
-                Hiển thị {indexOfFirstStudent + 1} -{" "}
-                {Math.min(indexOfLastStudent, filteredStudents.length)} trong{" "}
-                {filteredStudents.length} sinh viên
+                Showing {indexOfFirstStudent + 1} -{" "}
+                {Math.min(indexOfLastStudent, filteredStudents.length)} of{" "}
+                {filteredStudents.length} users
               </div>
               <div className="flex space-x-2">
                 <button
@@ -359,7 +354,7 @@ export default function UserList() {
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
-                  &laquo; Trước
+                  &laquo; Previous
                 </button>
                 {[...Array(totalPages)].map((_, index) => (
                   <button
@@ -383,7 +378,7 @@ export default function UserList() {
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
-                  Sau &raquo;
+                  Next &raquo;
                 </button>
               </div>
             </div>
@@ -396,20 +391,20 @@ export default function UserList() {
             <div className="bg-white rounded-lg p-6 w-96">
               <h3 className="text-lg font-semibold mb-4">
                 {toggleAction === "activate"
-                  ? "Kích hoạt tài khoản"
-                  : "Vô hiệu hóa tài khoản"}
+                  ? "Activate Account"
+                  : "Deactivate Account"}
               </h3>
               <p className="mb-6">
-                Bạn có chắc chắn muốn{" "}
-                {toggleAction === "activate" ? "kích hoạt" : "vô hiệu hóa"} tài
-                khoản của <strong>{userToToggle?.userName}</strong> không?
+                Are you sure you want to{" "}
+                {toggleAction === "activate" ? "activate" : "deactivate"} the
+                account of <strong>{userToToggle?.userName}</strong>?
               </p>
               <div className="flex justify-end gap-2">
                 <button
                   className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
                   onClick={() => setIsActivateModalOpen(false)}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   className={`px-4 py-2 rounded-md text-white ${
@@ -419,7 +414,7 @@ export default function UserList() {
                   }`}
                   onClick={handleToggleUserStatus}
                 >
-                  {toggleAction === "activate" ? "Kích hoạt" : "Vô hiệu hóa"}
+                  {toggleAction === "activate" ? "Activate" : "Deactivate"}
                 </button>
               </div>
             </div>
