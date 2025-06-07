@@ -8,6 +8,7 @@ import ProtectedLayout from "./components/ProtectedLayout";
 import PendingTeacherList from "./pages/PendingTeacherList";
 import QuizzTest from "./pages/QuizzTest";
 import Dashboard from "./pages/Dashboard";
+import TestDetail from "./pages/TestDetail";
 const App = () => {
   return (
     <div>
@@ -16,7 +17,7 @@ const App = () => {
           <Route path="/login" element={<AdminLogin />} />
           <Route path="/" element={<AdminLogin />} />
           <Route path="/dashboard" element={<Dashboard />} />
-
+          <Route path="/test/:testId" element={<TestDetail />} />
           <Route path="/users" element={<UserList />} />
           <Route path="/students" element={<StudentList />} />
           <Route path="/teachers" element={<TeacherList />} />

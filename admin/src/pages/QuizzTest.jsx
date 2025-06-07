@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AdminContext } from "../context/AdminContext";
 import SideBar from "../components/Sidebar";
+import { useNavigate } from "react-router-dom";
 
 const QuizzTest = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,7 +21,7 @@ const QuizzTest = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { collapsed } = useContext(AdminContext);
-
+  const navigate = useNavigate();
   // Fetch dữ liệu từ API
   const fetchAssessments = async () => {
     try {
@@ -99,6 +100,7 @@ const QuizzTest = () => {
     console.log("Xem chi tiết bài kiểm tra:", assessmentId);
     // Có thể redirect đến trang chi tiết
     // window.location.href = `/admin/assessments/${assessmentId}`;
+    navigate(`/test/${assessmentId}`);
   };
 
   return (
