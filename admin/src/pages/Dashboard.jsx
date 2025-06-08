@@ -5,6 +5,7 @@ import {
   GraduationCap,
   TrendingUp,
   BarChart3,
+  Download,
 } from "lucide-react";
 import {
   BarChart,
@@ -24,6 +25,7 @@ import {
 import { AdminContext } from "../context/AdminContext";
 import SideBar from "../components/Sidebar";
 import axios from "axios";
+import * as XLSX from "xlsx";
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -33,8 +35,8 @@ const Dashboard = () => {
   const [submissions, setSubmissions] = useState([]);
   const [tests, setTests] = useState([]);
 
-  const calAverageScore = (submissions) => {
-    // Kiểm tra nếu mảng rỗng hoặc undefined
+  const calculateAverageScore = (submissions) => {
+    // Check if array is empty or undefined
     if (!submissions || submissions.length === 0) {
       return 0;
     }
@@ -44,11 +46,10 @@ const Dashboard = () => {
       totalScore += submit.score;
     }
     console.log(totalScore);
-    return (totalScore / submissions.length).toFixed(2); // Làm tròn 2 chữ số thập phân
+    return (totalScore / submissions.length).toFixed(2); // Round to 2 decimal places
   };
 
   const getPointsPercentage = (minScore, maxScore, submissionsData) => {
-    // Sử dụng parameter submissionsData thay vì state submissions
     if (!submissionsData || submissionsData.length === 0) {
       return "0.00";
     }
@@ -66,30 +67,115 @@ const Dashboard = () => {
   };
 
   const getAverageTimeOfAllTests = (testsData) => {
-    // Kiểm tra nếu mảng rỗng hoặc undefined
+    // Check if array is empty or undefined
     if (!testsData || testsData.length === 0) {
-      return "0 phút";
+      return "0 minutes";
     }
 
     let totalTime = 0;
     for (let test of testsData) {
-      // Sử dụng timeLimit thay vì duration
+      // Use timeLimit instead of duration
       totalTime += test.timeLimit || 0;
     }
 
     const averageTime = totalTime / testsData.length;
 
-    // Chuyển đổi sang định dạng phù hợp
+    // Convert to appropriate format
     if (averageTime >= 60) {
       const hours = Math.floor(averageTime / 60);
       const minutes = Math.round(averageTime % 60);
-      return hours > 0 ? `${hours}h ${minutes}m` : `${minutes} phút`;
+      return hours > 0 ? `${hours}h ${minutes}m` : `${minutes} minutes`;
     } else {
-      return `${Math.round(averageTime)} phút`;
+      return `${Math.round(averageTime)} minutes`;
     }
   };
 
-  // Mock data
+  // Export to Excel function
+  const exportToExcel = () => {
+    if (!dashboardData) return;
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+
+    // Overview data
+    const overviewData = [
+      ["Metric", "Value"],
+      ["Total Tests", dashboardData.overview.totalTests],
+      ["Total Students", dashboardData.overview.totalStudents],
+      ["Total Teachers", dashboardData.overview.totalTeachers],
+      ["Average Score", dashboardData.overview.avgScore],
+      ["Average Test Time", dashboardData.overview.avgTestTime],
+      ["Total Submissions", submissions.length],
+    ];
+
+    // Subject distribution data
+    const subjectData = [
+      ["Subject", "Number of Tests", "Percentage"],
+      ...dashboardData.subjectDistribution.map((item) => [
+        item.name,
+        item.value,
+        `${(
+          (item.value /
+            dashboardData.subjectDistribution.reduce(
+              (sum, s) => sum + s.value,
+              0
+            )) *
+          100
+        ).toFixed(1)}%`,
+      ]),
+    ];
+
+    // Score distribution data
+    const scoreData = [
+      ["Score Range", "Percentage"],
+      ...dashboardData.scoreDistribution.map((item) => [
+        item.range,
+        `${item.percent}%`,
+      ]),
+    ];
+
+    // Submissions data (if available)
+    const submissionData = [
+      ["Submission ID", "Score", "Date"],
+      ...submissions.map((sub, index) => [
+        sub.id || `SUB-${index + 1}`,
+        sub.score,
+        sub.createdAt || new Date().toLocaleDateString(),
+      ]),
+    ];
+
+    // Tests data (if available)
+    const testData = [
+      ["Test ID", "Time Limit (minutes)", "Subject"],
+      ...tests.map((test, index) => [
+        test.id || `TEST-${index + 1}`,
+        test.timeLimit || 0,
+        test.subject || "N/A",
+      ]),
+    ];
+
+    // Create worksheets
+    const overviewWS = XLSX.utils.aoa_to_sheet(overviewData);
+    const subjectWS = XLSX.utils.aoa_to_sheet(subjectData);
+    const scoreWS = XLSX.utils.aoa_to_sheet(scoreData);
+    const submissionWS = XLSX.utils.aoa_to_sheet(submissionData);
+    const testWS = XLSX.utils.aoa_to_sheet(testData);
+
+    // Add worksheets to workbook
+    XLSX.utils.book_append_sheet(wb, overviewWS, "Overview");
+    XLSX.utils.book_append_sheet(wb, subjectWS, "Subject Distribution");
+    XLSX.utils.book_append_sheet(wb, scoreWS, "Score Distribution");
+    XLSX.utils.book_append_sheet(wb, submissionWS, "Submissions");
+    XLSX.utils.book_append_sheet(wb, testWS, "Tests");
+
+    // Generate filename with current date
+    const currentDate = new Date().toISOString().split("T")[0];
+    const filename = `Dashboard_Report_${currentDate}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, filename);
+  };
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -127,7 +213,7 @@ const Dashboard = () => {
           }
         );
 
-        // Lấy dữ liệu submissions từ response
+        // Get submissions data from response
         const submissionsData = totalSubmissionData.data.metadata || [];
         const testsData = totalExamData.data.metadata || [];
 
@@ -137,9 +223,9 @@ const Dashboard = () => {
 
         console.log(totalSubmissionData);
 
-        // Tính điểm trung bình với dữ liệu vừa lấy được
-        const averageScore = calAverageScore(submissionsData);
-        // Tính thời gian trung bình các bài test
+        // Calculate average score with newly fetched data
+        const averageScore = calculateAverageScore(submissionsData);
+        // Calculate average time of all tests
         const averageTestTime = getAverageTimeOfAllTests(testsData);
 
         setTimeout(() => {
@@ -152,12 +238,12 @@ const Dashboard = () => {
               avgTestTime: averageTestTime,
             },
             subjectDistribution: [
-              { name: "Toán học", value: 45, color: "#3B82F6" },
-              { name: "Hóa học", value: 32, color: "#10B981" },
-              { name: "Vật lý", value: 28, color: "#8B5CF6" },
-              { name: "Sinh học", value: 25, color: "#F59E0B" },
-              { name: "Văn học", value: 18, color: "#EF4444" },
-              { name: "Tiếng Anh", value: 8, color: "#6B7280" },
+              { name: "Mathematics", value: 45, color: "#3B82F6" },
+              { name: "Chemistry", value: 32, color: "#10B981" },
+              { name: "Physics", value: 28, color: "#8B5CF6" },
+              { name: "Biology", value: 25, color: "#F59E0B" },
+              { name: "Literature", value: 18, color: "#EF4444" },
+              { name: "English", value: 8, color: "#6B7280" },
             ],
             scoreDistribution: [
               {
@@ -194,7 +280,7 @@ const Dashboard = () => {
             totalStudents: 0,
             totalTeachers: 0,
             avgScore: 0,
-            avgTestTime: "0 phút",
+            avgTestTime: "0 minutes",
           },
           subjectDistribution: [],
           scoreDistribution: [],
@@ -210,7 +296,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <BarChart3 className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-600">Đang tải dữ liệu thống kê...</p>
+          <p className="text-gray-600">Loading statistical data...</p>
         </div>
       </div>
     );
@@ -230,22 +316,21 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  Dashboard Thống Kê
+                  Statistics Dashboard
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  Tổng quan hoạt động ứng dụng thi trắc nghiệm
+                  Overview of quiz application activities
                 </p>
               </div>
-              <select
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="7days">7 ngày qua</option>
-                <option value="30days">30 ngày qua</option>
-                <option value="3months">3 tháng qua</option>
-                <option value="1year">1 năm qua</option>
-              </select>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={exportToExcel}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Excel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -260,7 +345,7 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500">
-                    Tổng bài thi
+                    Total Tests
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {dashboardData?.overview?.totalTests || 0}
@@ -276,7 +361,7 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500">
-                    Tổng học sinh
+                    Total Students
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {dashboardData?.overview?.totalStudents || 0}
@@ -292,7 +377,7 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500">
-                    Tổng giáo viên
+                    Total Teachers
                   </p>
                   <p className="text-2xl font-bold text-gray-900">
                     {dashboardData?.overview?.totalTeachers || 0}
@@ -307,7 +392,7 @@ const Dashboard = () => {
                   <TrendingUp className="w-8 h-8 text-orange-600" />
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Điểm TB</p>
+                  <p className="text-sm font-medium text-gray-500">Avg Score</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {dashboardData?.overview?.avgScore || 0}
                   </p>
@@ -321,7 +406,7 @@ const Dashboard = () => {
             {/* Subject Distribution */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Phân bố bài thi theo môn học
+                Test Distribution by Subject
               </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -350,16 +435,14 @@ const Dashboard = () => {
             {/* Score Distribution */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Phân bố điểm số
+                Score Distribution
               </h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dashboardData?.scoreDistribution || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="range" />
                   <YAxis />
-                  <Tooltip
-                    formatter={(value) => [`${value}%`, "Số học sinh"]}
-                  />
+                  <Tooltip formatter={(value) => [`${value}%`, "Students"]} />
                   <Bar dataKey="percent" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -374,29 +457,29 @@ const Dashboard = () => {
                   {submissions.length}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Tổng lượt nộp bài thi
+                  Total Test Submissions
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border p-6">
+            {/* <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600 mb-2">
                   87.5%
                 </div>
                 <div className="text-sm text-gray-600">
-                  Tỷ lệ hoàn thành trung bình
+                  Average Completion Rate
                 </div>
               </div>
-            </div>
+            </div> */}
 
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                  {dashboardData?.overview?.avgTestTime || "0 phút"}
+                  {dashboardData?.overview?.avgTestTime || "0 minutes"}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Thời gian trung bình/bài thi
+                  Average Time per Test
                 </div>
               </div>
             </div>
