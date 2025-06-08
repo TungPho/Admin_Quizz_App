@@ -139,29 +139,15 @@ const TestDetail = () => {
           onClick={async () => {
             try {
               const response = await fetch(
-                `${BACK_END_LOCAL_URL}/tests/${testId}/ban`,
+                `https://backend-quizz-deploy.onrender.com/api/v1/tests/${testId}`,
                 {
-                  method: "PUT",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    isBanned: !test.isBanned,
-                  }),
+                  method: "DELETE",
                 }
               );
-
+              console.log(response);
               if (response.ok) {
-                const result = await response.json();
-                setTest((prev) => ({ ...prev, isBanned: !prev.isBanned }));
-                toast.success(
-                  result.message ||
-                    `Test ${
-                      test.isBanned ? "unbanned" : "banned"
-                    } successfully!`
-                );
-              } else {
-                toast.error("Error updating test status!");
+                toast.success("Banned Test Success!");
+                navigate("/submissions");
               }
             } catch (error) {
               console.error("Error banning/unbanning test:", error);

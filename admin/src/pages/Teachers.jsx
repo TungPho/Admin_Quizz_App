@@ -191,9 +191,6 @@ export default function TeacherList() {
                     <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
                       Created Date
                     </th>
-                    <th className="py-3 px-4 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">
-                      Actions
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -214,25 +211,6 @@ export default function TeacherList() {
                         </td>
                         <td className="py-4 px-4 text-gray-800">
                           {formatDate(teacher.createdAt)}
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center space-x-3">
-                            <button className="text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-50">
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              className="text-red-600 hover:text-red-800 p-1 rounded-md hover:bg-red-50"
-                              onClick={() => {
-                                setTeacherToDelete(teacher.id);
-                                setIsDeleteModalOpen(true);
-                              }}
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                            <button className="text-gray-600 hover:text-gray-800 p-1 rounded-md hover:bg-gray-50">
-                              <MoreHorizontal size={18} />
-                            </button>
-                          </div>
                         </td>
                       </tr>
                     ))

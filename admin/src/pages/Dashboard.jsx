@@ -90,6 +90,45 @@ const Dashboard = () => {
     }
   };
 
+  // Tính toán phân bố môn học từ dữ liệu thực tế
+  const calculateSubjectDistribution = (testsData) => {
+    if (!testsData || testsData.length === 0) {
+      return [];
+    }
+
+    // Danh sách màu sắc cho các môn học
+    const colors = [
+      "#3B82F6", // Blue
+      "#10B981", // Green
+      "#8B5CF6", // Purple
+      "#F59E0B", // Orange
+      "#EF4444", // Red
+      "#6B7280", // Gray
+      "#EC4899", // Pink
+      "#14B8A6", // Teal
+      "#F97316", // Orange-500
+      "#8B5A2B", // Brown
+    ];
+
+    // Đếm số lượng tests theo từng môn học
+    const subjectCount = {};
+    testsData.forEach((test) => {
+      const subject = test.subject || test.category || "Unknown"; // Sử dụng subject hoặc category
+      subjectCount[subject] = (subjectCount[subject] || 0) + 1;
+    });
+
+    // Chuyển đổi thành format phù hợp với chart và gán màu
+    const subjectDistribution = Object.entries(subjectCount)
+      .map(([subject, count], index) => ({
+        name: subject,
+        value: count,
+        color: colors[index % colors.length], // Sử dụng màu theo vòng lặp
+      }))
+      .sort((a, b) => b.value - a.value); // Sắp xếp theo số lượng giảm dần
+
+    return subjectDistribution;
+  };
+
   // Export to Excel function
   const exportToExcel = () => {
     if (!dashboardData) return;
@@ -150,7 +189,7 @@ const Dashboard = () => {
       ...tests.map((test, index) => [
         test.id || `TEST-${index + 1}`,
         test.timeLimit || 0,
-        test.subject || "N/A",
+        test.subject || test.category || "N/A",
       ]),
     ];
 
@@ -221,12 +260,17 @@ const Dashboard = () => {
         setSubmissions(submissionsData);
         setTests(testsData);
 
-        console.log(totalSubmissionData);
+        console.log("Tests data:", testsData);
+        console.log("Submissions data:", totalSubmissionData);
 
         // Calculate average score with newly fetched data
         const averageScore = calculateAverageScore(submissionsData);
         // Calculate average time of all tests
         const averageTestTime = getAverageTimeOfAllTests(testsData);
+        // Calculate subject distribution from real data
+        const subjectDistribution = calculateSubjectDistribution(testsData);
+
+        console.log("Subject distribution:", subjectDistribution);
 
         setTimeout(() => {
           setDashboardData({
@@ -237,14 +281,7 @@ const Dashboard = () => {
               avgScore: averageScore,
               avgTestTime: averageTestTime,
             },
-            subjectDistribution: [
-              { name: "Mathematics", value: 45, color: "#3B82F6" },
-              { name: "Chemistry", value: 32, color: "#10B981" },
-              { name: "Physics", value: 28, color: "#8B5CF6" },
-              { name: "Biology", value: 25, color: "#F59E0B" },
-              { name: "Literature", value: 18, color: "#EF4444" },
-              { name: "English", value: 8, color: "#6B7280" },
-            ],
+            subjectDistribution: subjectDistribution, // Sử dụng dữ liệu thực tế
             scoreDistribution: [
               {
                 range: "0-2",
@@ -408,28 +445,32 @@ const Dashboard = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Test Distribution by Subject
               </h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={dashboardData?.subjectDistribution || []}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                  >
-                    {(dashboardData?.subjectDistribution || []).map(
-                      (entry, index) => (
+              {dashboardData?.subjectDistribution?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={dashboardData.subjectDistribution}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) =>
+                        `${name}: ${(percent * 100).toFixed(0)}%`
+                      }
+                    >
+                      {dashboardData.subjectDistribution.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
-                      )
-                    )}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-300">
+                  <p className="text-gray-500">No subject data available</p>
+                </div>
+              )}
             </div>
 
             {/* Score Distribution */}
@@ -462,17 +503,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">
-                  87.5%
-                </div>
-                <div className="text-sm text-gray-600">
-                  Average Completion Rate
-                </div>
-              </div>
-            </div> */}
-
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">
@@ -481,6 +511,16 @@ const Dashboard = () => {
                 <div className="text-sm text-gray-600">
                   Average Time per Test
                 </div>
+              </div>
+            </div>
+
+            {/* Hiển thị tổng số môn học */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600 mb-2">
+                  {dashboardData?.subjectDistribution?.length || 0}
+                </div>
+                <div className="text-sm text-gray-600">Total Subjects</div>
               </div>
             </div>
           </div>
