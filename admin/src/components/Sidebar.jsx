@@ -1,12 +1,25 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FaHome, FaPlus, FaUsers } from "react-icons/fa";
+import {
+  FaHome,
+  FaPlus,
+  FaUsers,
+  FaUserGraduate,
+  FaChalkboardTeacher,
+} from "react-icons/fa";
 import { IoLibrary } from "react-icons/io5";
 import { TbReportSearch } from "react-icons/tb";
-import { MdClass, MdPerson, MdSchool } from "react-icons/md";
+import {
+  MdClass,
+  MdPerson,
+  MdSchool,
+  MdDashboard,
+  MdQuiz,
+  MdHourglassEmpty,
+} from "react-icons/md";
 import { GoChecklist } from "react-icons/go";
 import { RiMenuFoldLine, RiMenuUnfoldLine } from "react-icons/ri";
 import { IoMdClose } from "react-icons/io";
-import { FiLogOut } from "react-icons/fi"; // Added logout icon
+import { FiLogOut } from "react-icons/fi";
 import { useContext, useEffect, useRef, useState } from "react";
 import { AdminContext } from "../context/AdminContext";
 
@@ -118,8 +131,7 @@ const SideBar = () => {
           )}
 
           <nav className="flex-1 px-2">
-            {/*để kiểm tra giao diện mobile hay không ? có thì ẩn chữ, còn không thì hiện*/}
-
+            {/* Dashboard */}
             <NavLink
               to={"/dashboard"}
               className={({ isActive }) =>
@@ -130,12 +142,14 @@ const SideBar = () => {
                 } ${collapsed && !isMobile ? "justify-center" : ""}`
               }
             >
-              <FaUsers
+              <MdDashboard
                 className={`${collapsed && !isMobile ? "" : "mr-3"}`}
                 size={18}
               />
               {collapsed && !isMobile ? "" : "Dashboard"}
             </NavLink>
+
+            {/* All Users */}
             <NavLink
               to={"/users"}
               className={({ isActive }) =>
@@ -152,6 +166,8 @@ const SideBar = () => {
               />
               {collapsed && !isMobile ? "" : "All Users"}
             </NavLink>
+
+            {/* All Students */}
             <NavLink
               to={"/students"}
               className={({ isActive }) =>
@@ -162,12 +178,14 @@ const SideBar = () => {
                 } ${collapsed && !isMobile ? "justify-center" : ""}`
               }
             >
-              <MdSchool
+              <FaUserGraduate
                 className={`${collapsed && !isMobile ? "" : "mr-3"}`}
                 size={18}
               />
               {collapsed && !isMobile ? "" : "All Students"}
             </NavLink>
+
+            {/* All Teachers */}
             <NavLink
               to={"/teachers"}
               className={({ isActive }) =>
@@ -178,12 +196,14 @@ const SideBar = () => {
                 } ${collapsed && !isMobile ? "justify-center" : ""}`
               }
             >
-              <MdPerson
+              <FaChalkboardTeacher
                 className={`${collapsed && !isMobile ? "" : "mr-3"}`}
                 size={18}
               />
               {collapsed && !isMobile ? "" : "All Teachers"}
             </NavLink>
+
+            {/* All Quiz Tests */}
             <NavLink
               to={"/submissions"}
               className={({ isActive }) =>
@@ -194,12 +214,14 @@ const SideBar = () => {
                 } ${collapsed && !isMobile ? "justify-center" : ""}`
               }
             >
-              <FaUsers
+              <MdQuiz
                 className={`${collapsed && !isMobile ? "" : "mr-3"}`}
                 size={18}
               />
-              {collapsed && !isMobile ? "" : "All Quizz Tests"}
+              {collapsed && !isMobile ? "" : "All Quiz Tests"}
             </NavLink>
+
+            {/* Pending Teacher Requests */}
             <NavLink
               to={"/pending_teachers"}
               className={({ isActive }) =>
@@ -210,7 +232,7 @@ const SideBar = () => {
                 } ${collapsed && !isMobile ? "justify-center" : ""}`
               }
             >
-              <MdPerson
+              <MdHourglassEmpty
                 className={`${collapsed && !isMobile ? "" : "mr-3"}`}
                 size={18}
               />
