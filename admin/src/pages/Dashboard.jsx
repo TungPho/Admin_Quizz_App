@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
+import io from "socket.io-client";
+
 import {
   Users,
   FileText,
@@ -33,7 +35,15 @@ const Dashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("7days");
   const { collapsed } = useContext(AdminContext);
   const [submissions, setSubmissions] = useState([]);
+  const { socket, setSocket } = useContext(AdminContext);
   const [tests, setTests] = useState([]);
+
+  useEffect(() => {
+    socket.emit("getRoomList", "CNTT-3");
+    socket.on("roomList", (rooms) => {
+      console.log(rooms);
+    });
+  }, [socket]);
 
   const calculateAverageScore = (submissions) => {
     // Check if array is empty or undefined
