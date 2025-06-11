@@ -28,7 +28,12 @@ import { AdminContext } from "../context/AdminContext";
 import SideBar from "../components/Sidebar";
 import axios from "axios";
 import * as XLSX from "xlsx";
-
+const s = io(`https://backend-quizz-deploy.onrender.com`, {
+  withCredentials: true,
+  extraHeaders: {
+    "my-custom-header": "abcd",
+  },
+});
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,10 +43,12 @@ const Dashboard = () => {
   const { socket, setSocket } = useContext(AdminContext);
   const [tests, setTests] = useState([]);
 
+  const [rooms, setRooms] = useState([]);
   useEffect(() => {
-    socket.emit("getRoomList", "CNTT-3");
-    socket.on("roomList", (rooms) => {
-      console.log(rooms);
+    socket.emit("getAllRooms");
+    socket.on("roomList", (roomList) => {
+      console.log("length", roomList);
+      setRooms(roomList);
     });
   }, [socket]);
 
@@ -531,6 +538,14 @@ const Dashboard = () => {
                   {dashboardData?.subjectDistribution?.length || 0}
                 </div>
                 <div className="text-sm text-gray-600">Total Subjects</div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600 mb-2">
+                  {rooms.length || 0}
+                </div>
+                <div className="text-sm text-gray-600">Total Rooms</div>
               </div>
             </div>
           </div>
